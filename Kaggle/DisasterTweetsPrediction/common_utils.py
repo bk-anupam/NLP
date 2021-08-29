@@ -5,6 +5,7 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import TweetTokenizer
+from nltk.tokenize import RegexpTokenizer
 
 def decontracted(phrase):
     # specific
@@ -43,8 +44,8 @@ def process_tweet(tweet):
     #tweet = decontracted(tweet)
     #tweet = re.sub(r'[^a-zA-Z\d\s:]', '', tweet)
     # tokenize tweets
-    tokenizer = TweetTokenizer(preserve_case=False, strip_handles=True,
-                               reduce_len=True)
+    #tokenizer = RegexpTokenizer(r'[^\d\W]+')
+    tokenizer = TweetTokenizer(preserve_case=False, strip_handles=True, reduce_len=True)
     tweet_tokens = tokenizer.tokenize(tweet)
 
     tweets_clean = []
@@ -52,9 +53,9 @@ def process_tweet(tweet):
         # remove stopwords and punctuation
         if (word not in stopwords_english and word not in string.punctuation):
             stem_word = stemmer.stem(word)  # stemming word
-            lemma_word = lemmatizer.lemmatize(word)
-            #tweets_clean.append(stem_word)
-            tweets_clean.append(lemma_word)
+            #lemma_word = lemmatizer.lemmatize(word)
+            tweets_clean.append(stem_word)
+            #tweets_clean.append(word)
     return tweets_clean
 
 def add_or_increment(key, dict):
@@ -90,6 +91,6 @@ def build_freqs(tweets, ys):
     return freqs, pos_freqs, neg_freqs
 
 def get_topn_dictitems_byvalue(dict_data, n):
-    freq_word = [(value, key) for key, value in dict_data.items()]
+    freq_word = [[int(value), key] for key, value in dict_data.items()]
     freq_word.sort(reverse=True, key=lambda k: k[0])
     return freq_word[:n]
