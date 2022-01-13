@@ -22,6 +22,13 @@ def decontracted(phrase):
     phrase = re.sub(r"\'m", " am", phrase)
     return phrase
 
+punct = "/-'?!.,#$%\'()*+-/:;<=>@[\\]^_`{|}~`" + '""“”’' + '∞θ÷α•à−β∅³π‘₹´°£€\×™√²—–&'
+
+def clean_special_chars(text, punct):
+    for p in punct:
+        text = text.replace(p, ' ')
+    return text
+
 def process_tweet(tweet):
     """Process tweet function.
     Input:
@@ -30,32 +37,32 @@ def process_tweet(tweet):
         tweets_clean: a list of words containing the processed tweet
     """
     stemmer = PorterStemmer()
-    lemmatizer = WordNetLemmatizer()
+    lemmatizer = WordNetLemmatizer()    
     stopwords_english = stopwords.words('english')
     # remove stock market tickers like $GE
     tweet = re.sub(r'\$\w*', '', tweet)
     # remove old style retweet text "RT"
     tweet = re.sub(r'^RT[\s]+', '', tweet)
     # remove hyperlinks
-    tweet = re.sub(r'https?:\/\/.*[\r\n]*', '', tweet)
+    tweet = re.sub(r'http\S+', '', tweet)
     # remove hashtags
     # only removing the hash #, @, ... sign from the word
-    tweet = re.sub(r'\.{3}|@|#|û_', '', tweet)
-    #tweet = decontracted(tweet)
-    #tweet = re.sub(r'[^a-zA-Z\d\s:]', '', tweet)
-    # tokenize tweets
-    #tokenizer = RegexpTokenizer(r'[^\d\W]+')
+    tweet = re.sub(r'\.{3}|@|#', '', tweet)    
+    tweet = decontracted(tweet)    
+    # remove junk characters which don't have an ascii code
+    tweet = tweet.encode("ascii", "ignore").decode("utf-8", "ignore")
+    # tokenize tweets    
+    tweet = clean_special_chars(tweet, punct)
     tokenizer = TweetTokenizer(preserve_case=False, strip_handles=True, reduce_len=True)
     tweet_tokens = tokenizer.tokenize(tweet)
-
     tweets_clean = []
     for word in tweet_tokens:
+        print(word)
         # remove stopwords and punctuation
-        if (word not in stopwords_english and word not in string.punctuation):
+        if (word.isalpha() and word not in stopwords_english and word not in string.punctuation):
             stem_word = stemmer.stem(word)  # stemming word
             #lemma_word = lemmatizer.lemmatize(word)
-            tweets_clean.append(stem_word)
-            #tweets_clean.append(word)
+            tweets_clean.append(stem_word)            
     return tweets_clean
 
 def add_or_increment(key, dict):
