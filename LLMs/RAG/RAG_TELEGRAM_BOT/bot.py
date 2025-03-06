@@ -5,10 +5,10 @@ from logger import logger
 from datetime import datetime
 import re
 import os
-from vector_store import build_index, load_existing_index, query_index
+from vector_store import build_index, load_existing_index, query_index, query_llm
 
 config = Config()
-os.environ["GOOGLE_API_KEY"] = config.GEMINI_API_KEY
+# os.environ["GOOGLE_API_KEY"] = config.GEMINI_API_KEY
 
 # Create Telegram bot instance
 if not config.TELEGRAM_BOT_TOKEN:
@@ -36,6 +36,7 @@ def send_help(message):
 Here are the available commands:
 /start - Start the bot
 /help - Show this help message
+/query - Query the bot with a message related to the uploaded PDF documents
     
 You can also just type a message and I'll respond based on my programming!
 """)
@@ -86,7 +87,7 @@ def handle_document(message: Message):
 
     try:
         # Build the index for the uploaded PDF
-        build_index(pdf_path, persist_directory="chroma_db")
+        build_index(pdf_path, persist_directory=config.VECTOR_STORE_PATH)
         bot.reply_to(message, "PDF uploaded and indexed successfully.")
     except Exception as e:
         logger.error(f"Error indexing PDF: {str(e)}")
@@ -113,8 +114,9 @@ def handle_query(message):
             return
         
         logger.info(f"Received query: {query}")
-        vectordb = load_existing_index(persist_directory="chroma_db")
+        vectordb = load_existing_index(persist_directory=config.VECTOR_STORE_PATH)
         result = query_index(vectordb, query)
+        logger.info(f"Query result: {result}")
         bot.reply_to(message, result)
     except Exception as e:
         logger.error(f"Error handling query: {str(e)}")
@@ -167,27 +169,11 @@ class MessageHandler:
         
         elif "help" in message_lower:
             response = ("Here's what I can do:\n"
-                      "- Answer questions\n"
-                      "- Provide information\n"
-                      "- Set reminders\n"
-                      "- Tell jokes\n"
-                      "Just let me know what you need!")
-        
-        elif "joke" in message_lower:
-            response = "Why don't scientists trust atoms? Because they make up everything! 😄"
-        
-        elif "time" in message_lower:
-            current_time = datetime.now().strftime("%H:%M:%S")
-            response = f"The current time is {current_time}"
-        
-        elif "reminder" in message_lower or "remind" in message_lower:
-            # Simple reminder extraction (very basic)
-            match = re.search(r"remind\s+(?:me\s+)?(?:to\s+)?(.+?)(?:\s+at\s+|$)", message_lower)
-            if match:
-                reminder_text = match.group(1)
-                response = f"I'll remind you to: {reminder_text}\n(Note: This is a demo - actual reminder functionality would require additional implementation)"
-            else:
-                response = "What would you like me to remind you about?"
+                      "- Answer your query (on pdf documents uploaded). Use /query command followed by the query for this\n"
+                      "- index and store in vector DB uploaded pdf documents. Just send the pdf document as a message\n"
+                      "- answer any general query \n" 
+                      "- last message - to see your last message\n"                     
+                      "Just let me know what you need!")                
         
         # Example of checking conversation history
         elif "last message" in message_lower:
@@ -199,7 +185,7 @@ class MessageHandler:
         
         # Default response for unknown inputs
         else:
-            response = "I'm not sure how to respond to that. Type 'help' to see what I can do."
+            response = query_llm(message)
         
         # Update session with this interaction
         self._update_session(user_id, message, response)        
@@ -208,23 +194,37 @@ class MessageHandler:
 # Initialize message handler
 handler = MessageHandler()
 
+
 @bot.message_handler(func=lambda message: True)
 def handle_all_messages(message):
+    """
+    Handles all incoming messages to the bot.
+
+    This function is triggered for every message received by the bot. It logs the 
+    message details, processes the message using the handler, and sends a response 
+    back to the user. If an error occurs during message processing, it logs the 
+    error and sends an error message to the user.
+
+    Args:
+        message (telebot.types.Message): The incoming message object containing 
+        details about the message and the user.
+
+    Returns:
+        None
+    """
     try:
         user_id = message.from_user.id
-        incoming_msg = message.text
-        
-        logger.info(f"Received message from {user_id}: {incoming_msg}")
-        
+        incoming_msg = message.text        
+        logger.info(f"Received message from {user_id}: {incoming_msg}")        
         # Process the message
-        response_text = handler.process_message(user_id, incoming_msg)
-        
+        response_text = handler.process_message(user_id, incoming_msg)        
         # Send response
-        bot.reply_to(message, response_text)
-        
+        logger.info(f"Sending response to {user_id}: {response_text}")
+        bot.reply_to(message, response_text)        
     except Exception as e:
         logger.error(f"Error processing message: {str(e)}")
         bot.reply_to(message, "Sorry, I encountered an error processing your request.")
+
 
 def start_bot():
     bot.infinity_polling()        

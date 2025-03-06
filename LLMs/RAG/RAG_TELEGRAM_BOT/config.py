@@ -11,3 +11,4 @@ class Config:
     USER_SESSIONS = {}        
     # Optional: API keys for external services
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', None)
+    VECTOR_STORE_PATH=os.environ.get('VECTOR_STORE_PATH', None)
