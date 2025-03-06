@@ -5,3 +5,9 @@
 logs
 model
 *.pt
+hf_results
+LLMs/RAG/chroma_db/*
+LLMs/RAG/data/*
+*.env
+chroma_db
+LLMs/RAG/RAG_TELEGRAM_BOT/uploads/*
