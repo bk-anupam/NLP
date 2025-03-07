@@ -29,7 +29,7 @@ def create_vectorstore(texts, embeddings, persist_directory=Config.VECTOR_STORE_
         # Create a new vector store
         vectordb = Chroma.from_documents(documents=texts, embedding=embeddings, persist_directory=persist_directory)
     
-    vectordb.persist()  # Persist the updated vectorstore to disk
+    #vectordb.persist()  # Persist the updated vectorstore to disk
     logger.info(f"Vector store updated with {len(texts)} documents")    
     return vectordb
 
@@ -81,22 +81,31 @@ def query_llm(query, model_name="gemini-2.0-flash"):
 
 # add code to execute vector_store.py as a script
 if __name__ == "__main__":    
-    if len(sys.argv) != 2:
-        print("Usage: python vector_store.py <pdf_path>")
-        sys.exit(1)
-    pdf_path = sys.argv[1]
+    # if len(sys.argv) != 2:
+    #     print("Usage: python vector_store.py <pdf_path>")
+    #     sys.exit(1)
+    # pdf_path = sys.argv[1]
+    pdf_path = "/home/bk_anupam/code/ML/NLP/LLMs/RAG/data"
     config = Config()
-    # recursively loop through  a directory till you find all the pdf documents and build index for each
-    if os.path.isdir(pdf_path):
-        for root, dirs, files in os.walk(pdf_path):
-            for file in files:
-                if file.endswith(".pdf"):
-                    pdf_file = os.path.join(root, file)
-                    print(f"Building index for {pdf_file}")
-                    vectordb = build_index(pdf_file)
-    else:
-        print(f"Building index for {pdf_path}")
-        vectordb = build_index(pdf_path)
-    
-    # vectordb = build_index(pdf_path)
+    print(f"Building index for {pdf_path}")
+    pdf_files = [os.path.join(pdf_path, f) for f in os.listdir(pdf_path) if f.endswith(".pdf")]
+    for pdf_file in pdf_files:
+        print(f"Building index for {pdf_file}")
+        vectordb = build_index(pdf_file)
     print("Indexing complete.")
+
+
+    # # recursively loop through  a directory till you find all the pdf documents and build index for each
+    # if os.path.isdir(pdf_path):
+    #     for root, dirs, files in os.walk(pdf_path):
+    #         for file in files:
+    #             if file.endswith(".pdf"):
+    #                 pdf_file = os.path.join(root, file)
+    #                 print(f"Building index for {pdf_file}")
+    #                 vectordb = build_index(pdf_file)
+    # else:
+    #     print(f"Building index for {pdf_path}")
+    #     vectordb = build_index(pdf_path)
+    
+    # # vectordb = build_index(pdf_path)
+    # print("Indexing complete.")
